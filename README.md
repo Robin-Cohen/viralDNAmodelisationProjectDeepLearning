@@ -1,0 +1,2 @@
+# viralDNAmodelisationProjectDeepLearning
+stranded dna modelisation stored inside kuravirus using deeplearning
