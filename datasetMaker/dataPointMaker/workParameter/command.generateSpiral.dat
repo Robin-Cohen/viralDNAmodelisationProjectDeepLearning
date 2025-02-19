@@ -1,0 +1,38 @@
+firstStage 2
+lastStage  2
+# If we leave readPreviousFrameFile 1 (the default), then the ions at stage n will have the same coordinates as last.(n-1).pdb. So let's turn off structure file reading:
+readPreviousFrameFile 0
+# if we do stage 1, where readPreviousFrameFile is false, then monoAtoms will be adopted with an offset.
+# We don't need the time integrator at all, in this case. We can't turn it off, so just numReportingIntervals to the minimum possible value:
+numReportingIntervals 1
+# We wil need the constant Pi, so define a user variable:
+@pi 3.14159265358979
+# We will create a single chain, chain ID Z:
+spiralDNA chainID Z
+# Spiral will be right handed:
+spiralDNA spiralIsRightHanded 1
+#generate center position in 20 type of position btw -20 and 20 (x,y,z)
+spiralDNA center i
+#generate different radius btw 25 and 50 (r)
+spiralDNA radius j
+# The pitch turns out to be pretty constant, across shells:--> should it be modify?
+spiralDNA pitch 2.3
+# And of course this is also quite constant:
+spiralDNA helixAdvancePerBasePair .34
+# The north and south pole regions have very poor resolution in this map, so we only trace over a relatively modest range of theta:
+spiralDNA startTheta 1.00
+spiralDNA endTheta 2.2
+# This is a rotational offset, about the polar axis:
+spiralDNA phiOffset  180*@pi/180
+
+# We clear the frequencyPhaseAmplitudeVector, out of paranoia rather than necessity:
+spiralDNA frequencyPhaseAmplitude clear
+
+# If you want to make an atomistic (fine-grained) model, separately run MMB using this command file:
+spiralDNA spiralCommandsFileName commands.spiral.dat
+# This is where the fine grained structural coordinates will be written:
+spiralDNA spiralPdbFileName spiral.pdb
+
+spiralDNA writeCommands
+
+

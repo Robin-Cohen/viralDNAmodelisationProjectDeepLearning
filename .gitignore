@@ -1,0 +1,5 @@
+# ignore ALL directory in ANY directory named tmp
+tmp/
+# ignore all data directory named data
+data/
+*.log
