@@ -1,4 +1,7 @@
 This directory is to create data using MMB and making it variate in order to have multiple data point that we will add noise and variate after This
 
-To send file 
-git add --chmod=+x .
+generatemulti.sh--> genetate 10 data by making the center and radius variating randomly
+    Will copy content of work parameter and change with a sed command.generateSpiral.dat
+    will work in repertory that will be automaticly delated
+multi.sh --> lauch x time generatemulti.sh and compile log output into out.log
+
