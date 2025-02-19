@@ -1,1 +1,4 @@
 This directory is to create data using MMB and making it variate in order to have multiple data point that we will add noise and variate after This
+
+To send file 
+git add --chmod=+x .
