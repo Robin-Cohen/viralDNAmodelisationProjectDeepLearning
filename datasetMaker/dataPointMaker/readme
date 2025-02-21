@@ -1,7 +1,10 @@
 This directory is to create data using MMB and making it variate in order to have multiple data point that we will add noise and variate after This
 
-generatemulti.sh--> genetate 10 data by making the center and radius variating randomly
-    Will copy content of work parameter and change with a sed command.generateSpiral.dat
-    will work in repertory that will be automaticly delated
-multi.sh --> lauch x time generatemulti.sh and compile log output into out.log
+generatemulti.sh will generate 10 file with radius randomly distribute between 10 and 50 / and with xyz coordinates between -20 and 20
+    Will generate temporary directory for work and will delete it after that
+     Will copy content of work parameter and change with a sed command.generateSpiral.dat
+    Will generate mmciff files that can be found in data/
+multi.sh --> lauch x time generatemulti.sh and compile log output into out.log (bash multi.sh [number])
+Log output are compiled into out.log
 
+Usage of mmciff file because it seem too mush radius generated bug into pdb file

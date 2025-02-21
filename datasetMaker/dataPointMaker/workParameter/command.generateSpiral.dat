@@ -28,6 +28,9 @@ spiralDNA phiOffset  180*@pi/180
 # We clear the frequencyPhaseAmplitudeVector, out of paranoia rather than necessity:
 spiralDNA frequencyPhaseAmplitude clear
 
+#use mmciff file format
+useCIFFiles TRUE
+
 # If you want to make an atomistic (fine-grained) model, separately run MMB using this command file:
 spiralDNA spiralCommandsFileName commands.spiral.dat
 # This is where the fine grained structural coordinates will be written:

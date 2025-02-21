@@ -8,17 +8,18 @@ dirRandom="tmp$RANDOM"
 mkdir "$dirRandom/"
 cd "$dirRandom/"
 mkdir -p ../data
-for i in {1..10}
+#one call wil generate 10 random spiralDNA
+for i in {10}
 do
     center="$(generate_random_number -20 20).00 $(generate_random_number -20 20).00 $(generate_random_number -20 20).00"
-    radius=$(generate_random_number 25 50)
+    radius=$(generate_random_number 10 50)
     cp ../workParameter/* .
     sed -i "s/spiralDNA center i/spiralDNA center $center/" "command.generateSpiral.dat"
     sed -i "s/spiralDNA radius j/spiralDNA radius $radius\.00/" "command.generateSpiral.dat"
     MMB -c command.generateSpiral.dat 
     # cat command.generateSpiral.dat
     center=$(echo "$center" | sed 's/ /_/g')
-    mv last.2.pdb ../data/"spiralDNAcenter$center-radius$radius.pdb"
+    mv last.2.cif ../data/"spiralDNAcenter$center-radius$radius.cif"
     
 done
 cd ..
