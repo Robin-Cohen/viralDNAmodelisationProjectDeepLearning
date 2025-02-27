@@ -1,0 +1,35 @@
+# Then we will add noise and output the map.
+
+firstStage 1
+
+lastStage 1
+
+DNA A 1 ATGC
+
+mobilizer Rigid
+
+rootMobilizer A Weld
+
+# If we leave readPreviousFrameFile 1 (the default), then the ions at stage n will have the same coordinates as last.(n-1).pdb. So let's turn off structure file reading:
+
+readPreviousFrameFile 0
+
+# if we do stage 1, where readPreviousFrameFile is false, then monoAtoms will be adopted with an offset.
+
+# We don't need the time integrator at all, in this case. We can't turn it off, so just numReportingIntervals to the minimum possible value:
+
+numReportingIntervals 1
+
+
+removeRigidBodyMomentum false
+
+
+density densityFileName z
+
+#Seems to be required that we declare which chains will appear in output density maps:
+
+fitToDensity A
+
+densityNoiseScale x
+
+densityNoiseTemperature y

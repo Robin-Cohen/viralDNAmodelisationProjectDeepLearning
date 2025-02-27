@@ -1,0 +1,10 @@
+Reperetory where noisy file are created
+The script makenoise.sh take file in pdbToSmallMrcBoxes and add noise into them using MMB. 
+File generated are in xplor format--> the header seem to have a problem 
+After this the python script todefine.py will translate them into mrc file.
+    In order to ignore the header file the python script just take the data inside xplor file and recalculate the header.
+    for the moment the mrc file will be add to correctedXplor
+
+Usage:
+bash noiseMaker.sh
+python xplorToMrc.py dataXplor/*.mrc 
