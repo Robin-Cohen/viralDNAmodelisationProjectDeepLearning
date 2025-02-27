@@ -29,7 +29,7 @@ spiralDNA phiOffset  180*@pi/180
 spiralDNA frequencyPhaseAmplitude clear
 
 #use mmciff file format
-useCIFFiles TRUE
+#useCIFFiles TRUE
 
 # If you want to make an atomistic (fine-grained) model, separately run MMB using this command file:
 spiralDNA spiralCommandsFileName commands.spiral.dat
