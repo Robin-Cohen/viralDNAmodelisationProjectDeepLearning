@@ -1,1 +1,4 @@
 conda install -c conda-forge -c schrodinger pymol-bundle
+usage:
+bash pdbToMrc.sh
+will take files in "viralDNAmodelisationProjectDeepLearning/datasetMaker/dataPointMaker/data/", transform them into mrc thanks to pdb2vol to finaly cut it in boxes of 35

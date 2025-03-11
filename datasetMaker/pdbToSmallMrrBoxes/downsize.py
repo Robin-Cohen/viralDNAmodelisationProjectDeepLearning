@@ -28,7 +28,7 @@ def putHeader(header, box):
     return header
 
 def saveWithHeader(inputMrcFile, dataNewMrcFile, i, inputFileName, output_dir):
-    newHeader=inputMrcFile.header.copy()
+    # newHeader=inputMrcFile.header.copy()
     newVsize = inputMrcFile.voxel_size.copy()
                     
                     
@@ -39,8 +39,8 @@ def saveWithHeader(inputMrcFile, dataNewMrcFile, i, inputFileName, output_dir):
 
     with mrcfile.new(output_path, overwrite=True) as mrc:
         mrc.set_data(dataNewMrcFile)
-        newHeader = putHeader(newHeader, dataNewMrcFile)
-        mrc.header.set = newHeader
+        # newHeader = putHeader(newHeader, dataNewMrcFile)
+        # mrc.header.set = newHeader
         mrc.voxel_size = newVsize
         mrc.update_header_from_data()
         
@@ -49,9 +49,9 @@ def cut_mrc_file_to_boxes(file_path,  output_dir, inputFileName, box_size=35,):
     with mrcfile.open(file_path, permissive=True) as mrc:
         data = mrc.data
         counterBox=0
-        for z in range(0, data.shape[0], box_size):
-            for y in range(0, data.shape[1], box_size):
-                for x in range(0, data.shape[2], box_size):
+        for z in range(0, data.shape[0], box_size+1):
+            for y in range(0, data.shape[1], box_size+1):
+                for x in range(0, data.shape[2], box_size+1):
                     box = data[z:z+box_size, y:y+box_size, x:x+box_size]
                     if not box.any():
                         continue
