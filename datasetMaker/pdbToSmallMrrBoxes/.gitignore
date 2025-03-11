@@ -1,0 +1,6 @@
+boxData/
+*.pdb
+*.out
+test*
+boxesOutput/
+fullMrcData/

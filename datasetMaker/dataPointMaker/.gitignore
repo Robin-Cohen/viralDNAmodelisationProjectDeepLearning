@@ -7,3 +7,6 @@ frame.pdb
 initial.pdb
 trajectory*.pdb
 commands.spiral.dat
+*.cif
+*.pdb
+cif/
