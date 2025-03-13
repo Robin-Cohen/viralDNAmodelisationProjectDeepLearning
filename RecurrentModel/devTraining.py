@@ -1,7 +1,7 @@
 from devModel import *
 # from torch.utils.tensorboard import SummaryWriter
 torch.manual_seed(42)
-dataset = MrcDataset(getMrcFeatures())
+dataset = MrcDataset(getMrcFeatures("/home/robin/viralDNAmodelisationProjectDeepLearning/dataset"))
 # writer = SummaryWriter()
 # print("------------------------------------------------")
 # print(dataset.shape()))
@@ -72,15 +72,18 @@ for epoch in range(30):
         for i, vdata in enumerate(testDataloader, 0):
             vinputs, vlabels = vdata
             voutputs = model(vinputs)
-            predictions.extend(voutputs.cpu().numpy())
+            predictions.extend(voutputs.cpu().numpy())  
             actuals.extend(vlabels.cpu().numpy())
             vloss = loss_fn(voutputs, vlabels)
             vrunning_loss += vloss.item()
     avg_vloss = vrunning_loss / (i + 1)
-    print('LOSS train {} valid {}'.format(last_loss, avg_vloss))
-
-    for pred, actual in zip(predictions, actuals):
-        print(f"Prediction: {pred}, Actual: {actual}")
+    # print('LOSS train {} valid {}'.format(last_loss, avg_vloss))
+    with open("training_log.txt", "a") as log_file:
+        log_file.write(f"Epoch {epoch}, Training Loss: {last_loss:.4f}, Validation Loss: {avg_vloss:.4f}\n")
+        for pred, actual in zip(predictions, actuals):
+            # print(f"Prediction: {pred}, Actual: {actual}")
+            log_file.write(f"Prediction: {pred}, Actual: {actual}\n")
+        log_file.write("------------------------------------------------\n")
     # writer.add_scalars('Training vs. Validation Loss',
     #                 { 'Training' : last_loss, 'Validation' : avg_vloss },
     #                 epoch)
