@@ -1,2 +1,17 @@
-numProcess=30
-fileByProcess=10
+#parameter that will be source for an automatisation of producing the dataset
+#the dataset will be used for training the neural network
+
+#number of files to generate= numProcess*fileByProcess
+numProcess=1
+fileByProcess=1
+# seem to not have effect because of mrc
+centerMin=0
+centerMax=0
+#radius in nm
+radiusMin=5
+radiusMax=10
+
+#pitch *.01
+pitchMin=5
+pitchMax=10
+maxNumberofProcess=20
