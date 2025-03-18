@@ -12,11 +12,12 @@ spiralDNA chainID Z
 # Spiral will be right handed:
 spiralDNA spiralIsRightHanded 1
 #generate center position in 20 type of position btw -20 and 20 (x,y,z)
-spiralDNA center i
+spiralDNA center spiralCenterValues
 #generate different radius btw 25 and 50 (r)
-spiralDNA radius j
+spiralDNA radius spiralRadiusValue
 # The pitch turns out to be pretty constant, across shells:--> should it be modify?
-spiralDNA pitch 2.3
+#orgianal value 2.3
+spiralDNA pitch pitchValue
 # And of course this is also quite constant:
 spiralDNA helixAdvancePerBasePair .34
 # The north and south pole regions have very poor resolution in this map, so we only trace over a relatively modest range of theta:
