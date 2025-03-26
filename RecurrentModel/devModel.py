@@ -22,17 +22,15 @@ class MrcDataset(Dataset):
         return len(self.MrcDic)
     
     def __getitem__(self, idx):
-        mrcfileName = self.MrcDic[idx]["filename"]
-        label = self.MrcDic[idx]["radius"]
-        # Loading data
         try:
-            with mrcfile.open(mrcfileName, mode='r+') as mrc:
-                mrcData = mrc.data
+            mrcfileName = self.MrcDic[idx]["filename"]
         except:
-            print(f"Error loading file {mrcfileName}")
-            return None
+            print(f"Error loading file {self.MrcDic[idx]["filename"]}")
+        label = [self.MrcDic[idx]["radius"], self.MrcDic[idx]["pitch"]]
+        # Loading data
+        with mrcfile.open(mrcfileName, mode='r+') as mrc:
+            mrcData = mrc.data
 
-        # Normalisation --> TO DO chech how to do it with transform
         mindata=np.min(mrcData)
         for i in range(mrcData.shape[0]):
             mrcData[i][0][0]=0.0
@@ -43,11 +41,14 @@ class MrcDataset(Dataset):
         #tensor conversion
         mrcData = torch.from_numpy(mrcData).float()
         label = torch.tensor(label, dtype=torch.float32)
+        
         # Add channel dimension
         mrcData = mrcData.unsqueeze(0)
         if self.transform:
             mrcData = self.transform(mrcData)
         return mrcData, label
+
+
 
 
 class Model(torch.nn.Module):
@@ -70,42 +71,63 @@ class Model(torch.nn.Module):
 
         self.conv5 = nn.Conv3d(128, 256, kernel_size=3, stride=1, padding=2)
         self.relu5 = nn.ReLU()
-        
+    
         self.pool1 = nn.AdaptiveAvgPool3d((1, 1, 1))  
 
         self.fc1 = nn.Linear(256, 1)
         
-    def forward(self, x):
-        x = self.relu1(self.conv1(x))
-        x = (self.relu2(self.conv2(x)))
-        x = (self.relu3(self.conv3(x)))
-        x = self.relu4(self.conv4(x))
-        x = self.relu5(self.conv5(x))
-        x = self.pool1(x)
-        x = torch.flatten(x, start_dim=1)
-        x = self.fc1(x)
-        return x.squeeze(-1)
-#######################################################""
-class FullyConnectedRegressor(nn.Module):
-    def __init__(self):
-        super(FullyConnectedRegressor, self).__init__()
-        self.flatten = nn.Flatten()
-        self.fc2 = nn.Linear(35*35*35, 512)
-        self.fc3 = nn.Linear(512, 256)
-        self.fc4 = nn.Linear(256, 128)
-        self.fc5 = nn.Linear(128, 64)
-        self.fc6 = nn.Linear(64, 32)
-        self.fc7 = nn.Linear(32, 1)
-        self.relu = nn.ReLU()
-        self.tanh = nn.Tanh()
+class ModelMultiReg(nn.Module):
+    def __init__(self, input_shape=(1, 35, 35, 35)):
+        super().__init__()
+        
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 16, 7, stride=2, padding=3),
+            nn.BatchNorm3d(16),
+            nn.LeakyReLU(),
+            nn.MaxPool3d(3, stride=2),
+            
+            nn.Conv3d(16, 32, 5, padding=2),
+            nn.BatchNorm3d(32),
+            nn.LeakyReLU(),
+            nn.Dropout3d(0.3),
+            
+            nn.Conv3d(32, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.LeakyReLU(),
+            nn.Dropout3d(0.3),
+
+            nn.Conv3d(64, 128, 3, padding=1),
+            nn.BatchNorm3d(128),
+            nn.LeakyReLU(),
+            nn.Dropout3d(0.2),
+
+            nn.Conv3d(128, 256, 3, padding=1),
+            nn.BatchNorm3d(256),
+            nn.LeakyReLU(),
+            nn.Dropout3d(0.2),
+
+            nn.AdaptiveAvgPool3d((4, 4, 4))
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(256*4*4*4, 2048),
+            nn.BatchNorm1d(2048),
+            nn.LeakyReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(2048, 1024),
+            nn.LeakyReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(1024, 512),
+            nn.LeakyReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(512, 256),
+            nn.LeakyReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, 2)
+        )
 
     def forward(self, x):
-        x = self.flatten(x)
-        x = self.tanh(self.fc2(x))
-        x = self.tanh(self.fc3(x))
-        x = self.tanh(self.fc4(x))
-        x = self.tanh(self.fc5(x))
-        x = self.tanh(self.fc6(x))
-        x = self.fc7(x)
-        return x.squeeze(-1)
-
+        x = self.features(x)
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
+        return x

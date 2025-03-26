@@ -1,25 +1,40 @@
 import os
 import re
 import mrcfile
+import numpy as np
 
 def get_radius_value(filename):
     match = re.search(r'radius(\d+)', filename)
     if match:
         return int(match.group(1))
     return None
-def getMrcFeatures(directory="/home/robin/viralDNAmodelisationProjectDeepLearning/dataset/")->dict:
+
+def get_pitch_value(filename):
+    match = re.search(r'pitch(\d)', filename)
+    match_decimal = re.search(r'pitch(\d+\.\d+)', filename)
+    if match_decimal:
+        return float(match_decimal.group(1))
+def get_phi_value(filename):
+    match = re.search(r'phi(\d+)', filename)
+    if match:
+        return int(match.group(1))
+    return None
+
+def getMrcFeatures(directory="/home/robin/viralDNAmodelisationProjectDeepLearning/spiralMidlePitchNoNoises")->dict:
     fileFeatures = {}
-    for num, filename in enumerate(os.listdir(directory)):
+    listFeatures = []
+    for filename in os.listdir(directory):
         if filename.endswith(".mrc"):
-            fileFeatures[num]={}
-            fileFeatures[num]["filename"]=os.path.join(directory, filename)
-            
 
             #get radius
             radius = get_radius_value(filename)
-            fileFeatures[num]["radius"]=radius
-
-    #if continue with filename use this solution, otherwise would be good to build a csv file with the features at the file generation
+            pitch= get_pitch_value(filename)
+            phi = 3
+            if any(v is None for v in [filename,radius, pitch]):
+                continue
+            listFeatures.append([os.path.join(directory, filename), radius, pitch])
+    for i in range(len(listFeatures)):
+        fileFeatures[i] = {"filename": listFeatures[i][0], "radius": listFeatures[i][1], "pitch": listFeatures[i][2]}
     return fileFeatures
 
 def get_corruptedFile(mrcDir):
@@ -35,4 +50,4 @@ def get_corruptedFile(mrcDir):
     return corruptedFile
 
 if __name__ == "__main__":
-    print(get_corruptedFile("/home/robin/viralDNAmodelisationProjectDeepLearning/dataset/"))
+    print((getMrcFeatures(directory="/home/robin/viralDNAmodelisationProjectDeepLearning/datasetNoNoisePitchRadiusPhi")))
