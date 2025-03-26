@@ -43,6 +43,7 @@ do
     radius=$(generate_random_number $radiusMin $radiusMax)
     pitch=$(generate_random_number $pitchMin $pitchMax)
     pitch=$(echo "$pitch * 0.1" | bc)
+    phi=$(generate_random_number 0 360)
 
     echo "center: $center"
     echo "radius: $radius"
@@ -51,10 +52,11 @@ do
     sed -i "s/spiralDNA center spiralCenterValues/spiralDNA center $center/" "command.generateSpiral.dat"
     # sed -i "s/spiralDNA radius spiralRadiusValue/spiralDNA radius 0.5/" "command.generateSpiral.dat"
     sed -i "s/spiralDNA radius spiralRadiusValue/spiralDNA radius $radius\.00/" "command.generateSpiral.dat"
-    sed -i "s/spiralDNA pitch pitchValue/spiralDNA pitch $pitch/" "command.generateSpiral.dat"
+    sed -i "s/spiralDNA pitch pitchValue\/spiralDNA pitch $pitch/" "command.generateSpiral.dat"
+    # sed -i "s/spiralDNA phiOffset  phivar*@pi/180/spiralDNA phiOffset  $phi*@pi/180/" "command.generateSpiral.dat"
     MMB -c command.generateSpiral.dat 
     center=$(echo "$center" | sed 's/ /_/g')
-    gemmi convert last.2.cif ../data/"spiralDNAcenter$center-radius$radius-pitch$pitch.pdb"
+    gemmi convert last.2.cif ../data/"spiralDNAcenter$center-radius$radius-pitch$pitch-phi$phi.pdb"
 done
 cd ..
 rm -rf "$dirRandom"
