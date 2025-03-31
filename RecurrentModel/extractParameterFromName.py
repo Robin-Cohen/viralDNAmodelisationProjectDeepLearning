@@ -20,7 +20,7 @@ def get_phi_value(filename):
         return int(match.group(1))
     return None
 
-def getMrcFeatures(directory="/home/robin/viralDNAmodelisationProjectDeepLearning/spiralMidlePitchNoNoises")->dict:
+def getMrcFeatures(directory="/cephyr/users/robincoh/Alvis/viralTracing/dataset/spiralMidlePitchWithNoises")->dict:
     fileFeatures = {}
     listFeatures = []
     for filename in os.listdir(directory):
@@ -37,6 +37,24 @@ def getMrcFeatures(directory="/home/robin/viralDNAmodelisationProjectDeepLearnin
         fileFeatures[i] = {"filename": listFeatures[i][0], "radius": listFeatures[i][1], "pitch": listFeatures[i][2]}
     return fileFeatures
 
+def getMrcFeaturesPhi(directory="/cephyr/users/robincoh/Alvis/viralTracing/dataset/spiralMidlePitchWithNoises")->dict:
+    fileFeatures = {}
+    listFeatures = []
+    for filename in os.listdir(directory):
+        if filename.endswith(".mrc"):
+
+            #get radius
+            radius = get_radius_value(filename)
+            pitch= get_pitch_value(filename)
+            phi = get_phi_value(filename)
+            if any(v is None for v in [filename,radius, pitch,phi]):
+                continue
+            listFeatures.append([os.path.join(directory, filename), radius, pitch,phi])
+    for i in range(len(listFeatures)):
+        fileFeatures[i] = {"filename": listFeatures[i][0], "radius": listFeatures[i][1], "pitch": listFeatures[i][2],
+                           "phi":listFeatures[i][3]}
+    return fileFeatures
+
 def get_corruptedFile(mrcDir):
     corruptedFile=[]
     for filename in os.listdir(mrcDir):
@@ -50,4 +68,5 @@ def get_corruptedFile(mrcDir):
     return corruptedFile
 
 if __name__ == "__main__":
-    print((getMrcFeatures(directory="/home/robin/viralDNAmodelisationProjectDeepLearning/datasetNoNoisePitchRadiusPhi")))
+    dataDirectoryPath="/cephyr/users/robincoh/Alvis/viralTracing/dataset/spiralNoNoisePitchPhiRadius"
+    print((getMrcFeaturesPhi(directory=dataDirectoryPath)))
