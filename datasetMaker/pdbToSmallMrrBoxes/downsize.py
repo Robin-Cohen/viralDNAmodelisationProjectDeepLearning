@@ -4,7 +4,9 @@
 import mrcfile
 import sys
 import os
+import numpy as np
 
+DISCARD_RATE = 0.05 # 1% of the data points in the box
 def putHeader(header, box):
     header.mx = box.shape[2]
     header.my = box.shape[1]
@@ -45,15 +47,35 @@ def saveWithHeader(inputMrcFile, dataNewMrcFile, i, inputFileName, output_dir):
         mrc.update_header_from_data()
         
     
-def cut_mrc_file_to_boxes(file_path,  output_dir, inputFileName, box_size=35,):
+def getNumDataPoint(data:np.array)->int:
+    numDataPoint=0
+    for z in range(data.shape[0]):
+        for y in range(data.shape[1]):
+            for x in range(data.shape[2]):
+                if data[z][y][x]!=0:
+                    numDataPoint+=1
+    return numDataPoint
+
+
+def cut_mrc_file_to_boxes(file_path,  output_dir, inputFileName, box_size=35,stride=35):
     with mrcfile.open(file_path, permissive=True) as mrc:
         data = mrc.data
         counterBox=0
-        for z in range(0, data.shape[0], box_size+1):
-            for y in range(0, data.shape[1], box_size+1):
-                for x in range(0, data.shape[2], box_size+1):
+        print(f"Data shape: {data.shape}")
+        fullDataPoint=getNumDataPoint(data)
+        for z in range(0, data.shape[0], stride):
+            for y in range(0, data.shape[1], stride):
+                for x in range(0, data.shape[2] , stride):
                     box = data[z:z+box_size, y:y+box_size, x:x+box_size]
+                    if box.shape != (box_size, box_size, box_size):
+                        pad_width = [(0, max(0, box_size - s)) for s in box.shape]
+                        box = np.pad(box, pad_width, mode='constant', constant_values=0)
                     if not box.any():
+                        continue
+                    boxDataPoint=getNumDataPoint(box)
+                    print(f"Percent box data point: {(boxDataPoint/fullDataPoint)*100}")
+                    if (boxDataPoint/fullDataPoint)<DISCARD_RATE:
+                        print(f"Box has less than {DISCARD_RATE*100}%\ of the data points, skipping")
                         continue
                     counterBox+=1
                     saveWithHeader(mrc, box, counterBox, inputFileName, output_dir)
@@ -86,4 +108,4 @@ if __name__ == "__main__":
         nbox=cut_mrc_file_to_boxes(mrcFilePath, output_dir, mrcFilePath, box_size=35)
         # save_boxes_as_mrc_files(boxes, output_dir, mrcFilePath)
         print(f" {nbox} boxes created from {mrcFilePath} to {output_dir}")
-
+        
