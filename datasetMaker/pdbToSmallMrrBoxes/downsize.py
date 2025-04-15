@@ -5,8 +5,75 @@ import mrcfile
 import sys
 import os
 import numpy as np
+from Bio.PDB import PDBParser
 
 DISCARD_RATE = 0.05 # 1% of the data points in the box
+
+
+def parse_pdbForFirstAndLastAtom(pdb_path):
+    iter=0
+    parser = PDBParser()
+    structure = parser.get_structure('pdb', pdb_path)
+    atom_coords = []
+    last_atom = None
+    for model in structure:
+        for chain in model:
+            for residue in chain:
+                for atom in residue:
+                    if iter == 0:
+                        iter+=1
+                        atom_coords.append(atom.coord)
+                    else:
+                        last_atom = atom.coord
+                    
+    atom_coords.append(last_atom)
+    
+    return np.array(atom_coords)
+
+def convertToMrcCoordinates(atom_coords, origin, voxel_size,mapc, mapr, maps,mrc_path, mx, my, mz):
+    x, y, z = atom_coords
+    i = (x - origin.x)/voxel_size[0]
+    j = (y - origin.y)/voxel_size[1]
+    k = (z - origin.z)/voxel_size[2]
+    
+    # orientation gestion --> put on good axis
+    axis_order = {int(mapc):0, int(mapr):1, int(maps):2}
+    sorted_axes = [axis_order[key] for key in sorted(axis_order)]
+    final_indices = np.round([i, j, k])[sorted_axes].astype(int)
+    
+    with mrcfile.open(mrc_path) as mrc:
+        if np.any(final_indices < 0) or np.any(final_indices >= [mx, my, mz]):
+            raise ValueError("Coordonnées hors de la grille MRC")
+        
+    return final_indices
+
+def convert_first_last_coordinate_to_mrc_coordinates(pdb_path, mrc_path):
+    atom_coords = parse_pdbForFirstAndLastAtom(pdb_path)
+    
+    #mrc reading
+    with mrcfile.open(mrc_path,"r+") as mrc:
+        origin = mrc.header.origin  # x₀,y₀,z₀
+        cell = mrc.header.cella     # dimensions en Å
+        mx, my, mz = mrc.header.nx, mrc.header.ny, mrc.header.nz
+        mapc, mapr, maps = mrc.header.mapc, mrc.header.mapr, mrc.header.maps
+        
+    # voxel size
+    voxel_size = (cell.x/mx, cell.y/my, cell.z/mz)
+    
+    # conversion
+    final_coordinates = []
+    for elem in atom_coords:
+        final_coordinates.append(convertToMrcCoordinates(elem, origin, voxel_size, mapc, mapr, maps,mrc_path, mx, my, mz))
+    
+    return final_coordinates
+
+ # Check if one of the two 3D coordinates in firstLastCoordinate is within the box
+def is_coordinate_within_box(firstLastCoordinate, relative_coordinates, maxRelative_coordinates):
+    for index, coord in enumerate(firstLastCoordinate):
+        if all(relative_coordinates[i] <= coord[i] < maxRelative_coordinates[i] for i in range(3)):
+            return True, index
+    return False, None
+
 def putHeader(header, box):
     header.mx = box.shape[2]
     header.my = box.shape[1]
@@ -57,11 +124,14 @@ def getNumDataPoint(data:np.array)->int:
     return numDataPoint
 
 
-def cut_mrc_file_to_boxes(file_path,  output_dir, inputFileName, box_size=35,stride=35):
-    with mrcfile.open(file_path, permissive=True) as mrc:
+def cut_mrc_file_to_boxes(inputFileName,  output_dir, pdb_path, box_size=35,stride=35):
+    # pdb_path = "/home/robin/viralDNAmodelisationProjectDeepLearning/datasetMaker/dataPointMaker/data/spiralDNAcenter0.00_0.00_0.00-radius15-pitch.5.pdb"
+    
+    firstLastCoordinate =convert_first_last_coordinate_to_mrc_coordinates(pdb_path,inputFileName)
+    with mrcfile.open(inputFileName, permissive=True) as mrc:
         data = mrc.data
         counterBox=0
-        print(f"Data shape: {data.shape}")
+        # print(f"Data shape: {data.shape}")
         fullDataPoint=getNumDataPoint(data)
         for z in range(0, data.shape[0], stride):
             for y in range(0, data.shape[1], stride):
@@ -73,21 +143,36 @@ def cut_mrc_file_to_boxes(file_path,  output_dir, inputFileName, box_size=35,str
                     if not box.any():
                         continue
                     boxDataPoint=getNumDataPoint(box)
-                    print(f"Percent box data point: {(boxDataPoint/fullDataPoint)*100}")
+                    # print(f"Percent box data point: {(boxDataPoint/fullDataPoint)*100}")
                     if (boxDataPoint/fullDataPoint)<DISCARD_RATE:
-                        print(f"Box has less than {DISCARD_RATE*100}%\ of the data points, skipping")
+                        # print(f"Box has less than {DISCARD_RATE*100}%\ of the data points, skipping")
                         continue
                     counterBox+=1
-                    saveWithHeader(mrc, box, counterBox, inputFileName, output_dir)
+
+                    baseOutputFileName = os.path.basename(inputFileName).split(".mrc")[0] # take  the basneme of the file and remove the .mrc extension
+                    relative_coordinates = [x, y, z]
+                    maxRelative_coordinates = [x+box_size, y+box_size, z+box_size]
+                    strCoordinate = map(str, relative_coordinates)
+                    baseOutputFileName+="box"+ "_".join(strCoordinate)
+
+                    is_within, which_coordinate = is_coordinate_within_box(firstLastCoordinate, relative_coordinates, maxRelative_coordinates)
+                    if is_within:
+                        # print(f"Box {counterBox} contains the {'first' if which_coordinate == 0 else 'last'} atom coordinate.")
+                        endCoordinateStr= map(str, firstLastCoordinate[which_coordinate])
+                        baseOutputFileName +="endpoint"+"_".join(endCoordinateStr)
+                    baseOutputFileName=baseOutputFileName+".mrc"
+                    print(f"creating box {baseOutputFileName}")
+                    # print(f"Box {counterBox} relative coordinates: {relative_coordinates} regulate coordinates: {relative_coordinates}")
+                    # print(f"first-last coordinate :{firstLastCoordinate}")
+                    saveWithHeader(mrc, box, counterBox, baseOutputFileName, output_dir)
                     
         return counterBox
 
 def save_boxes_as_mrc_files(boxes, output_dir, inputFileName):
-    input_file_name = os.path.basename(inputFileName).split(".mrc")[0] # take  the basneme of the file and remove the .mrc extension
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     for i, box in enumerate(boxes):
-        output_path =  f"{output_dir}/{input_file_name}_box_{i}.mrc"
+        output_path =  f"{output_dir}/{inputFileName}_box_{i}.mrc"
         with mrcfile.new(output_path, overwrite=True) as mrc:
             mrc.set_data(box)
 
@@ -95,17 +180,20 @@ if __name__ == "__main__":
     InputMrcFiles=[]
     isAInputDir = False
     output_dir = "boxesOutput" #default output directory
+    mrc_path = None
+    pdb_path = None
     for i in range(1, len(sys.argv)):
         if sys.argv[i] == "-output_dir":
             output_dir = sys.argv[i+1]
             isAInputDir = True
         elif isAInputDir:
             isAInputDir = False
-            continue
-        else:
-            InputMrcFiles.append(sys.argv[i])
-    for mrcFilePath in InputMrcFiles:
-        nbox=cut_mrc_file_to_boxes(mrcFilePath, output_dir, mrcFilePath, box_size=35)
-        # save_boxes_as_mrc_files(boxes, output_dir, mrcFilePath)
-        print(f" {nbox} boxes created from {mrcFilePath} to {output_dir}")
+        elif sys.argv[i] == "-input_pdb":
+            pdb_path = sys.argv[i+1]
+            isAInputDir = True
+        elif sys.argv[i] == "-input_mrc":
+            mrc_path = sys.argv[i+1]
+            isAInputDir = True
+        # print(sys.argv)
+    cut_mrc_file_to_boxes(mrc_path, output_dir, pdb_path, box_size=35)
         
