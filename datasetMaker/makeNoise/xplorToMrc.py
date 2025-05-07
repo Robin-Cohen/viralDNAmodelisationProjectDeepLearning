@@ -1,7 +1,10 @@
+#/home/robin/opt/miniconda3/envs/ReccurentModel/bin/python
 import numpy as np
 import mrcfile
 import sys
 import os
+import csv
+from filelock import FileLock
 
 class XPLOR_Density_Map:
     def __init__(self, path):
@@ -56,20 +59,55 @@ class XPLOR_Density_Map:
             mrc.voxel_size = self.cell_size  #put into voxel
             mrc.update_header_from_data()
 
+def putInCsv(mrcNoisyFileName, mrcClean, csvFile, noiseFactor, tempFactor):
+    updated_rows = []
+    found = False
+    print("putInCsv")
+    mrcClean = mrcClean.split("/")[-1]
+    print(f"mrc clean: {mrcClean} mrc noisy: {mrcNoisyFileName}")
+    with open(csvFile, 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row and row[0] == mrcClean:
+               
+                while len(row) < 14:  # Ensure there are at least 12 columns
+                    row.append("")
+                row[11] = mrcNoisyFileName  # Add mrcNoisyFileName to the 12th column
+                row[12] = float(noiseFactor)  # Add noiseFactor to the 13th column
+                row[13] = int(tempFactor)  # Add tempFactor to the 14th column
+                found = True
+            updated_rows.append(row)
+
+    if not found:
+       return  # If mrcClean is not found, do nothing
+    # Write the updated rows back to the CSV file
+    with FileLock(csvFile + ".lock"):
+        with open(csvFile, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerows(updated_rows)
 
 # usage--> to do replace with choice of user
 # xplor_file = "/home/robin/viralDNAmodelisationProjectDeepLearning/datasetMaker/makeNoise/correctedXplor/noisyMap.xplor"
-mrc_output = "/home/robin/viralDNAmodelisationProjectDeepLearning/datasetMaker/makeNoise/correctedXplor/"
-
+mrc_output = os.environ["noiseDirPath"]
+os.mkdir(mrc_output) if not os.path.exists(mrc_output) else None
 # xplor_map = XPLOR_Density_Map(xplor_file)
 # xplor_map.to_mrc(mrc_output)
 
-import concurrent.futures
+def process_file(xplor_file,mrcClean, noiseFactor, tempFactor):
 
-def process_file(xplor_file):
+    csvfile = os.environ["boxinfo"]
     xplor_map = XPLOR_Density_Map(xplor_file)
-    xplor_map.to_mrc(mrc_output + os.path.basename(xplor_file).split(".xplor")[0] + ".mrc")
+    print(f"Processing {xplor_file}")
+    mrcName= os.path.basename(xplor_file).split(".xplor")[0] + ".mrc"
+    xplor_map.to_mrc(mrc_output + mrcName)
     print(f"{xplor_file} converted to mrc")
+    putInCsv(mrcName,mrcClean, csvfile, noiseFactor, tempFactor)
 
-with concurrent.futures.ThreadPoolExecutor() as executor:
-    executor.map(process_file, sys.argv[1:])
+# repetory = sys.argv[1]
+# xplor_file = [os.path.join(repetory, file) for file in os.listdir(repetory) if file.endswith('.xplor')]
+# print(len(xplor_file))
+xplor_file = sys.argv[1]
+mrcClean = sys.argv[2]
+noiseFactor = sys.argv[3]
+tempFactor = sys.argv[4]
+process_file(xplor_file,mrcClean, noiseFactor, tempFactor)
