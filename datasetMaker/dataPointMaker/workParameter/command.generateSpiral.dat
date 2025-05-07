@@ -10,7 +10,7 @@ numReportingIntervals 1
 # We will create a single chain, chain ID Z:
 spiralDNA chainID Z
 # Spiral will be right handed:
-spiralDNA spiralIsRightHanded 1
+spiralDNA spiralIsRightHanded
 #generate center position in 20 type of position btw -20 and 20 (x,y,z)
 spiralDNA center spiralCenterValues
 #generate different radius btw 25 and 50 (r)
@@ -21,10 +21,11 @@ spiralDNA pitch pitchValue
 # And of course this is also quite constant:
 spiralDNA helixAdvancePerBasePair .34
 # The north and south pole regions have very poor resolution in this map, so we only trace over a relatively modest range of theta:
-spiralDNA startTheta 1.00
-spiralDNA endTheta 2.2
+#defining theta value
+spiralDNA startTheta
+spiralDNA endTheta
 # This is a rotational offset, about the polar axis:
-spiralDNA phiOffset  phivar*@pi/180
+spiralDNA phivar
 
 # We clear the frequencyPhaseAmplitudeVector, out of paranoia rather than necessity:
 spiralDNA frequencyPhaseAmplitude clear
