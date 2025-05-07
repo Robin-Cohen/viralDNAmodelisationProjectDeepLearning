@@ -2,16 +2,15 @@
 #the dataset will be used for training the neural network
 
 #number of files to generate= numProcess*fileByProcess
-numProcess=1
-fileByProcess=1
+numProcess=10
+fileByProcess=1000
 # seem to not have effect because of mrc
-centerMin=0
-centerMax=0
-#radius in nm
+centerMin=-50
+centerMax=50
 radiusMin=5
-radiusMax=10
+radiusMax=30
 
-#pitch *.01
-pitchMin=5
-pitchMax=10
-maxNumberofProcess=20
+pitchMin=3
+pitchMax=15
+
+maxNumberofProcess=15
