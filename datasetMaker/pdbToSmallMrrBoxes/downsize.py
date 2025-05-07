@@ -6,10 +6,58 @@ import sys
 import os
 import numpy as np
 from Bio.PDB import PDBParser
+import re
 
-DISCARD_RATE = 0.05 # 1% of the data points in the box
+DISCARD_RATE = 0
 
+def moveBox(box, boxCoordinate, orginalData, variableRange=3):
+    box_size = 35
+    variation= np.random.randint(-variableRange, variableRange+1)
+    boxCoordinate[0] += variation
+    boxCoordinate[1] += variation
+    boxCoordinate[2] += variation
+    z, y, x = boxCoordinate
 
+    box = orginalData[z:z+box_size, y:y+box_size, x:x+box_size]
+    if box.shape != (box_size, box_size, box_size):
+        pad_width = [(0, max(0, box_size - s)) for s in box.shape]
+        box = np.pad(box, pad_width, mode='constant', constant_values=0)
+
+    if not box.any():
+        return None
+    boxDataPoint=getNumDataPoint(box)
+    fullDataPoint=getNumDataPoint(orginalData)
+    if (boxDataPoint/fullDataPoint)<DISCARD_RATE:
+        # print(f"Box has less than {DISCARD_RATE*100}%\ of the data points, skipping")
+        return None
+    return [box, boxCoordinate]
+
+def get_radius_value(filename):
+    match = re.search(r'radius(\d+.\d+)', filename)
+    if match:
+        return float(match.group(1))
+    return None
+def get_pitch_value(filename):
+    match = re.search(r'pitch(\d)', filename)
+    match_decimal = re.search(r'pitch(\d+\.\d+)', filename)
+    if match_decimal:
+        return float(match_decimal.group(1))
+
+def putInfoInCsv(inputFileName, dataPointBox, dataPointOriginal,relative_coordinates, endPoint):
+    csv_file_path = os.path.join("../..", "box_info.csv")
+    print(f"csv file path: {csv_file_path}")
+    if not os.path.exists(csv_file_path):
+        with open(csv_file_path, "w") as csv_file:
+            csv_file.write("Box_file_name_No_Noise,radius,pitch,xEndpoint,yEndpoint,zEndpoint,xOriginBox,yOriginBox,zOriginBox,numberOfPointBox,numberOfPointOrigin\n")
+    with open(csv_file_path, "a") as csv_file:
+        radius = get_radius_value(inputFileName)
+        pitch = get_pitch_value(inputFileName)
+        for data in endPoint:
+            if data is None:
+                data = "NaN"
+        csv_file.write(f"{inputFileName},{radius},{pitch},{endPoint[0]},{endPoint[1]},{endPoint[2]},{relative_coordinates[0]},{relative_coordinates[1]},{relative_coordinates[2]},{dataPointBox},{dataPointOriginal}\n")
+        
+        
 def parse_pdbForFirstAndLastAtom(pdb_path):
     iter=0
     parser = PDBParser()
@@ -101,10 +149,10 @@ def saveWithHeader(inputMrcFile, dataNewMrcFile, i, inputFileName, output_dir):
     newVsize = inputMrcFile.voxel_size.copy()
                     
                     
-    input_file_name = os.path.basename(inputFileName).split(".mrc")[0] # take  the basneme of the file and remove the .mrc extension
+    input_file_name = os.path.basename(inputFileName) # take  the basneme of the file and remove the .mrc extension
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    output_path =  f"{output_dir}/{input_file_name}_box_{i}.mrc"
+    output_path =  f"{output_dir}/{input_file_name}"
 
     with mrcfile.new(output_path, overwrite=True) as mrc:
         mrc.set_data(dataNewMrcFile)
@@ -154,27 +202,33 @@ def cut_mrc_file_to_boxes(inputFileName,  output_dir, pdb_path, box_size=35,stri
                     maxRelative_coordinates = [x+box_size, y+box_size, z+box_size]
                     strCoordinate = map(str, relative_coordinates)
                     baseOutputFileName+="box"+ "_".join(strCoordinate)
-
+                    endCoordinate=[None, None, None]
+                    orginalName= baseOutputFileName
                     is_within, which_coordinate = is_coordinate_within_box(firstLastCoordinate, relative_coordinates, maxRelative_coordinates)
                     if is_within:
-                        # print(f"Box {counterBox} contains the {'first' if which_coordinate == 0 else 'last'} atom coordinate.")
-                        endCoordinateStr= map(str, firstLastCoordinate[which_coordinate])
+                        endCoordinate= firstLastCoordinate[which_coordinate]
+                        endCoordinateStr= map(str, endCoordinate)
                         baseOutputFileName +="endpoint"+"_".join(endCoordinateStr)
+                        for i in range(3):
+                            boxes = moveBox(box, relative_coordinates, data)
+                            if boxes is not None:
+                                counterBox+=1
+                                strCoordinate = map(str, boxes[1])
+                                orginalName+="box"+ "_".join(strCoordinate)
+                                orginalName +="endpoint"+"_".join(endCoordinateStr) + ".mrc"
+                                saveWithHeader(mrc, boxes[0], counterBox, orginalName, output_dir)
+                                putInfoInCsv(orginalName,boxDataPoint,fullDataPoint,relative_coordinates, endCoordinate)
+                            else:
+                                print(baseOutputFileName)
+                                continue
                     baseOutputFileName=baseOutputFileName+".mrc"
-                    print(f"creating box {baseOutputFileName}")
+                    # print(f"creating box {baseOutputFileName}")
                     # print(f"Box {counterBox} relative coordinates: {relative_coordinates} regulate coordinates: {relative_coordinates}")
                     # print(f"first-last coordinate :{firstLastCoordinate}")
                     saveWithHeader(mrc, box, counterBox, baseOutputFileName, output_dir)
+                    putInfoInCsv(baseOutputFileName,boxDataPoint,fullDataPoint,relative_coordinates, endCoordinate)
                     
         return counterBox
-
-def save_boxes_as_mrc_files(boxes, output_dir, inputFileName):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    for i, box in enumerate(boxes):
-        output_path =  f"{output_dir}/{inputFileName}_box_{i}.mrc"
-        with mrcfile.new(output_path, overwrite=True) as mrc:
-            mrc.set_data(box)
 
 if __name__ == "__main__":
     InputMrcFiles=[]
@@ -196,4 +250,3 @@ if __name__ == "__main__":
             isAInputDir = True
         # print(sys.argv)
     cut_mrc_file_to_boxes(mrc_path, output_dir, pdb_path, box_size=35)
-        
