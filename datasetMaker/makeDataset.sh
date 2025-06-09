@@ -32,10 +32,12 @@ echo "done"
 echo "converting to mrc boxes..."
 cd ../pdbToSmallMrrBoxes/
 bash pdbToMrc.sh
+wait
 echo "done"
 cd ../
 
 mv box_info.csv $dataDir
+cat $dataDir/box_info.csv | wc -l
 export boxinfo=$(readlink -f "$dataDir/box_info.csv")
 
 # Create a new directory with a unique name

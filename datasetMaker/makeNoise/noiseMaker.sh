@@ -28,8 +28,10 @@ generate_noise() {
     cd "$dirRandom/"
         
     cp ../workParameter/* .
-    number=$(generate_random_number 0 70)
-    temp=$(generate_random_number 50 500)
+    number=$(generate_random_number 1 40)
+    # number=1 #default value for testing temp noise
+    temp=$(generate_random_number 50 300)
+    # temp=100 #default value for testing noise
     noise=$(echo "scale=2;$number*0.01+0.18"|bc)
     sed -i "s/densityNoiseScale x/densityNoiseScale $noise/" "noise.dat"
     sed -i "s/densityNoiseTemperature y/densityNoiseTemperature $temp/" "noise.dat"
@@ -48,7 +50,6 @@ generate_noise() {
     echo "putting the noise in the box info file"
     echo "python ../xplorToMrc.py $xplorName $mrcFile $noise $temp"
     python ../xplorToMrc.py $xplorName $mrcFile $noise $temp
-    # awk -F "," -v line="$number" -v value="noisyMap$(basename $mrcFile)0$noise-$temp.xplor" 'BEGIN {OFS = FS} NR == line {$12 = value} 1' ../../box_info.csv > ../../box_info.csv.tmp && mv ../../box_info.csv.tmp ../../box_info.csv
     cd ..
     rm -rf "$dirRandom"
     

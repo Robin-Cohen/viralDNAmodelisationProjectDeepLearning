@@ -9,9 +9,12 @@ from Bio.PDB import PDBParser
 import re
 
 DISCARD_RATE = 0
-
+DISCARD_VALUE = 2000
+SIZE_BOX = 35 # size of the box to cut the mrc file into
+MOVE_TRY = 10
+ONLY_ENDPOINT = False # if True, only the endpoint will be saved in the csv file
 def moveBox(box, boxCoordinate, orginalData, variableRange=3):
-    box_size = 35
+    box_size = SIZE_BOX
     variation= np.random.randint(-variableRange, variableRange+1)
     boxCoordinate[0] += variation
     boxCoordinate[1] += variation
@@ -27,8 +30,9 @@ def moveBox(box, boxCoordinate, orginalData, variableRange=3):
         return None
     boxDataPoint=getNumDataPoint(box)
     fullDataPoint=getNumDataPoint(orginalData)
-    if (boxDataPoint/fullDataPoint)<DISCARD_RATE:
-        # print(f"Box has less than {DISCARD_RATE*100}%\ of the data points, skipping")
+    # if (boxDataPoint/fullDataPoint)<DISCARD_RATE:# if not enouth data --> old way
+    #     return None
+    if boxDataPoint <= DISCARD_VALUE: # if not enouth data --> new way
         return None
     return [box, boxCoordinate]
 
@@ -172,7 +176,7 @@ def getNumDataPoint(data:np.array)->int:
     return numDataPoint
 
 
-def cut_mrc_file_to_boxes(inputFileName,  output_dir, pdb_path, box_size=35,stride=35):
+def cut_mrc_file_to_boxes(inputFileName,  output_dir, pdb_path, box_size=SIZE_BOX,stride=SIZE_BOX):
     # pdb_path = "/home/robin/viralDNAmodelisationProjectDeepLearning/datasetMaker/dataPointMaker/data/spiralDNAcenter0.00_0.00_0.00-radius15-pitch.5.pdb"
     
     firstLastCoordinate =convert_first_last_coordinate_to_mrc_coordinates(pdb_path,inputFileName)
@@ -206,25 +210,14 @@ def cut_mrc_file_to_boxes(inputFileName,  output_dir, pdb_path, box_size=35,stri
                     orginalName= baseOutputFileName
                     is_within, which_coordinate = is_coordinate_within_box(firstLastCoordinate, relative_coordinates, maxRelative_coordinates)
                     if is_within:
+                        print(f"Box {counterBox} relative coordinates: {relative_coordinates} regulate coordinates: {maxRelative_coordinates}")
                         endCoordinate= firstLastCoordinate[which_coordinate]
                         endCoordinateStr= map(str, endCoordinate)
                         baseOutputFileName +="endpoint"+"_".join(endCoordinateStr)
-                        for i in range(3):
-                            boxes = moveBox(box, relative_coordinates, data)
-                            if boxes is not None:
-                                counterBox+=1
-                                strCoordinate = map(str, boxes[1])
-                                orginalName+="box"+ "_".join(strCoordinate)
-                                orginalName +="endpoint"+"_".join(endCoordinateStr) + ".mrc"
-                                saveWithHeader(mrc, boxes[0], counterBox, orginalName, output_dir)
-                                putInfoInCsv(orginalName,boxDataPoint,fullDataPoint,relative_coordinates, endCoordinate)
-                            else:
-                                print(baseOutputFileName)
-                                continue
+                    else:
+                        if ONLY_ENDPOINT:
+                            continue
                     baseOutputFileName=baseOutputFileName+".mrc"
-                    # print(f"creating box {baseOutputFileName}")
-                    # print(f"Box {counterBox} relative coordinates: {relative_coordinates} regulate coordinates: {relative_coordinates}")
-                    # print(f"first-last coordinate :{firstLastCoordinate}")
                     saveWithHeader(mrc, box, counterBox, baseOutputFileName, output_dir)
                     putInfoInCsv(baseOutputFileName,boxDataPoint,fullDataPoint,relative_coordinates, endCoordinate)
                     
@@ -249,4 +242,4 @@ if __name__ == "__main__":
             mrc_path = sys.argv[i+1]
             isAInputDir = True
         # print(sys.argv)
-    cut_mrc_file_to_boxes(mrc_path, output_dir, pdb_path, box_size=35)
+    cut_mrc_file_to_boxes(mrc_path, output_dir, pdb_path, box_size=SIZE_BOX)

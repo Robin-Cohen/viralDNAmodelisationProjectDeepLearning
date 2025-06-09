@@ -65,26 +65,19 @@ def putInCsv(mrcNoisyFileName, mrcClean, csvFile, noiseFactor, tempFactor):
     print("putInCsv")
     mrcClean = mrcClean.split("/")[-1]
     print(f"mrc clean: {mrcClean} mrc noisy: {mrcNoisyFileName}")
-    with open(csvFile, 'r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if row and row[0] == mrcClean:
-               
-                while len(row) < 14:  # Ensure there are at least 12 columns
-                    row.append("")
-                row[11] = mrcNoisyFileName  # Add mrcNoisyFileName to the 12th column
-                row[12] = float(noiseFactor)  # Add noiseFactor to the 13th column
-                row[13] = int(tempFactor)  # Add tempFactor to the 14th column
-                found = True
-            updated_rows.append(row)
-
-    if not found:
-       return  # If mrcClean is not found, do nothing
-    # Write the updated rows back to the CSV file
-    with FileLock(csvFile + ".lock"):
-        with open(csvFile, 'w', newline='') as file:
+    #temp modification
+    csvFile = os.path.dirname(csvFile)
+    csvFile = os.path.join(csvFile, "boxInfoNoise.csv")
+    if not os.path.exists(csvFile):
+        print(f"CSV file {csvFile} does not exist. Creating a new one.")
+        with open(csvFile, 'w') as file:
             writer = csv.writer(file)
-            writer.writerows(updated_rows)
+            writer.writerow(["Box_file_name_No_Noise", "mrcNoisyFileName", "noiseFactor", "tempFactor"])  # Write header
+    with open(csvFile, 'a+') as file:
+        # write the new row
+        writer = csv.writer(file)
+        writer.writerow([mrcClean, mrcNoisyFileName, noiseFactor, tempFactor])  # Write the new row
+
 
 # usage--> to do replace with choice of user
 # xplor_file = "/home/robin/viralDNAmodelisationProjectDeepLearning/datasetMaker/makeNoise/correctedXplor/noisyMap.xplor"
@@ -99,7 +92,8 @@ def process_file(xplor_file,mrcClean, noiseFactor, tempFactor):
     xplor_map = XPLOR_Density_Map(xplor_file)
     print(f"Processing {xplor_file}")
     mrcName= os.path.basename(xplor_file).split(".xplor")[0] + ".mrc"
-    xplor_map.to_mrc(mrc_output + mrcName)
+    mrcFullOutputpath = os.path.join(mrc_output, mrcName) 
+    xplor_map.to_mrc(mrcFullOutputpath)
     print(f"{xplor_file} converted to mrc")
     putInCsv(mrcName,mrcClean, csvfile, noiseFactor, tempFactor)
 

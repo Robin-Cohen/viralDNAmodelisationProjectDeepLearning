@@ -15,3 +15,6 @@ done
 wait
 echo "done spliting"
 rm -rf fullMrcData
+
+cat ../pdb2volParameter| pdb2vol /home/robin/viralDNAmodelisationProjectDeepLearning/datasetMaker/dataPointMaker/dataCylinder/spiralDNAcenter0.00_0.00_0.00-radius5-pitch1.0.pdb -input_mrc /spiralDNAcenter0.00_0.00_0.00-radius5-pitch1.0.mrc test.mrc
+python ../downsize.py -output_dir ../boxData/ -input_pdb /home/robin/viralDNAmodelisationProjectDeepLearning/datasetMaker/dataPointMaker/dataCylinder/spiralDNAcenter0.00_0.00_0.00-radius5-pitch1.0.pdb -input_mrc test.mrc
