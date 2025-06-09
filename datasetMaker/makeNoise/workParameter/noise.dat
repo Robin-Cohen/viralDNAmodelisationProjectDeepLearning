@@ -1,4 +1,4 @@
-# Then we will add noise and output the map.
+# Adding noise MMB script
 
 firstStage 1
 
@@ -29,7 +29,7 @@ density densityFileName z
 #Seems to be required that we declare which chains will appear in output density maps:
 
 fitToDensity A
-
+#noise factor
 densityNoiseScale x
-
+#temperature noise
 densityNoiseTemperature y
