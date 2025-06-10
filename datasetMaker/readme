@@ -1,3 +1,9 @@
-Reperetory where script producing data will be write and used
+Reperetory where script producing data are write and used
 Will go from generate a MMB file to multiple and different viral dna file
 And after this noise will be add and eventualy data will be incrase 
+Usage :
+modify parameter to control boundaries and number of file
+To launch the project just launch makeDataset.sh
+
+This need to have pdbSitus package installed
+python dependances: mrcfile, Bio.PDB, numpy
